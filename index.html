@@ -29,9 +29,7 @@
       min-height: 100vh;
     }
     .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 18px 40px; }
-    .topbar {
-      display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:20px;
-    }
+    .topbar { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:20px; }
     .title h1 { margin:0; font-size:28px; letter-spacing:-0.03em; }
     .title p { margin:8px 0 0; color: var(--muted); }
     .actions { display:flex; gap:10px; flex-wrap:wrap; }
@@ -45,11 +43,7 @@
       box-shadow: var(--shadow);
     }
     button:hover { border-color: rgba(96,165,250,.45); }
-    .grid {
-      display:grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 16px;
-    }
+    .grid { display:grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
     .card {
       background: var(--panel);
       border: 1px solid var(--line);
@@ -73,9 +67,7 @@
     .sub { color: var(--muted); font-size: 13px; margin-top: 6px; }
     .pos { color: var(--green); }
     .neg { color: var(--red); }
-    .status {
-      display:flex; gap: 10px; align-items:center; margin-top: 12px; color: var(--muted);
-    }
+    .status { display:flex; gap: 10px; align-items:center; margin-top: 12px; color: var(--muted); }
     .dot { width:10px; height:10px; border-radius:999px; background: var(--green); box-shadow: 0 0 0 6px rgba(34,197,94,.14); }
     .chart {
       height: 320px;
@@ -103,10 +95,7 @@
       background: rgba(2,6,23,.65); border: 1px solid var(--line);
       color: #cbd5e1; overflow:auto; max-height: 260px;
     }
-    @media (max-width: 980px){
-      .hero,.side{ grid-column: span 12; }
-      .metric-grid{ grid-template-columns: repeat(2,1fr); }
-    }
+    @media (max-width: 980px){ .hero,.side{ grid-column: span 12; } .metric-grid{ grid-template-columns: repeat(2,1fr); } }
   </style>
 </head>
 <body>
@@ -126,20 +115,14 @@
       <div class="card hero">
         <div class="label">Market Snapshot</div>
         <div class="metric-grid">
-          <div class="metric"><div class="label">Index</div><div class="value" id="indexValue">4,987.21</div><div class="sub" id="indexDelta">+12.42 (+0.25%)</div></div>
-          <div class="metric"><div class="label">Open</div><div class="value" id="openValue">4,976.88</div><div class="sub">오늘 시가</div></div>
-          <div class="metric"><div class="label">High</div><div class="value" id="highValue">4,992.10</div><div class="sub">일중 고가</div></div>
-          <div class="metric"><div class="label">Low</div><div class="value" id="lowValue">4,968.44</div><div class="sub">일중 저가</div></div>
+          <div class="metric"><div class="label">Index</div><div class="value" id="indexValue">--</div><div class="sub" id="indexDelta">연결 대기</div></div>
+          <div class="metric"><div class="label">Open</div><div class="value" id="openValue">--</div><div class="sub">오늘 시가</div></div>
+          <div class="metric"><div class="label">High</div><div class="value" id="highValue">--</div><div class="sub">일중 고가</div></div>
+          <div class="metric"><div class="label">Low</div><div class="value" id="lowValue">--</div><div class="sub">일중 저가</div></div>
         </div>
-        <div class="status"><div class="dot"></div><div>데이터 소스: API 연결 전 / 예시 UI</div></div>
+        <div class="status"><div class="dot"></div><div id="statusText">데이터 소스: API 연결 전</div></div>
         <div class="chart">
           <svg viewBox="0 0 1000 320" preserveAspectRatio="none" aria-label="S&P 500 chart">
-            <defs>
-              <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stop-color="rgba(96,165,250,0.35)"/>
-                <stop offset="100%" stop-color="rgba(96,165,250,0.02)"/>
-              </linearGradient>
-            </defs>
             <path class="fill" d="M0,260 C120,220 170,240 260,190 C350,140 420,165 500,120 C610,65 700,120 790,95 C880,70 930,55 1000,45 L1000,320 L0,320 Z"></path>
             <path class="spark" d="M0,260 C120,220 170,240 260,190 C350,140 420,165 500,120 C610,65 700,120 790,95 C880,70 930,55 1000,45"></path>
             <text class="axis" x="12" y="24">1D Trend</text>
@@ -162,24 +145,48 @@
 
   <script>
     const out = document.getElementById('out');
-    const log = (...a) => out.textContent = a.join(' ');
+    const statusText = document.getElementById('statusText');
+    const fmt = n => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+    const set = (id, value) => document.getElementById(id).textContent = value;
 
     const API_KEY = 'C8CWR9VZRVBK2A5I';
     const BASE = 'https://www.alphavantage.co/query';
 
-    async function testApi() {
-      const url = `${BASE}?function=GLOBAL_QUOTE&symbol=SPY&apikey=${C8CWR9VZRVBK2A5I}`;
+    function applyQuote(q) {
+      const price = Number(q['05. price']);
+      const open = Number(q['02. open']);
+      const high = Number(q['03. high']);
+      const low = Number(q['04. low']);
+      const prev = Number(q['08. previous close']);
+      const change = Number(q['09. change']);
+      const changePct = q['10. change percent'];
+      set('indexValue', fmt(price));
+      set('indexDelta', `${change >= 0 ? '+' : ''}${fmt(change)} (${changePct})`);
+      document.getElementById('indexDelta').className = `sub ${change >= 0 ? 'pos' : 'neg'}`;
+      set('openValue', fmt(open));
+      set('highValue', fmt(high));
+      set('lowValue', fmt(low));
+      statusText.textContent = `업데이트 완료 · 이전종가 ${fmt(prev)}`;
+      out.textContent = JSON.stringify(q, null, 2);
+    }
+
+    async function loadQuote() {
+      const url = `${BASE}?function=GLOBAL_QUOTE&symbol=SPY&apikey=${API_KEY}`;
       try {
         const res = await fetch(url, { mode: 'cors' });
-        const text = await res.text();
-        log('HTTP', res.status, '\n\n', text.slice(0, 1200));
+        const data = await res.json();
+        const q = data['Global Quote'];
+        if (!q) throw new Error(data.Note || data.Information || 'No quote data');
+        applyQuote(q);
       } catch (e) {
-        log('ERR:', e.message, '\nCORS 차단이면 백엔드 프록시가 필요함');
+        statusText.textContent = 'API 연결 실패';
+        out.textContent = `ERR: ${e.message}\n\nCORS 차단이면 백엔드 프록시가 필요함`;
       }
     }
 
-    document.getElementById('test').onclick = testApi;
-    document.getElementById('refresh').onclick = () => location.reload();
+    document.getElementById('test').onclick = loadQuote;
+    document.getElementById('refresh').onclick = loadQuote;
+    loadQuote();
   </script>
 </body>
 </html>
